@@ -2,6 +2,7 @@ from collections import Counter
 import requests
 import logging
 
+
 class WorkSet:
     def __init__(self, volume_list):
         self.volumes = [Volume(htid) for htid in volume_list]
@@ -17,7 +18,7 @@ class WorkSet:
                     except KeyError:
                         self._tokens[token] = {"pos": Counter()}
                         tok = self._tokens[token]
-                    tok["pos"].update(volume.tokens[token]['pos'])
+                    tok["pos"].update(volume.tokens[token]["pos"])
         return self._tokens
 
 
@@ -38,12 +39,11 @@ class Volume:
         if not self._data:
             url = "/".join((self.base_url, self.id))
             r = requests.get(url)
-#            breakpoint()
             json = r.json()
             try:
                 self._data = json["data"]
             except KeyError:
-                logging.warning(r.json()['message'])
+                logging.warning(r.json()["message"])
         return self._data
 
     @property
@@ -161,27 +161,3 @@ class Page:
                 except KeyError:
                     self._tokens[token] = {"pos": Counter({pos: count})}
         return self._tokens
-
-    @property
-    def tokens_old(self):
-        if not self._tokens:
-            for k in self.tokenPosCount.keys():
-                token = k.lower()
-                pos = list(self.tokenPosCount[k])[0]
-                count = self.tokenPosCount[k][pos]
-                try:
-                    self._tokens[token]["pos"][pos] = count
-                except KeyError:
-                    self._tokens[token] = {"pos": {pos: count}}
-        return self._tokens
-
-
-htid = "loc.ark+=13960=t46q23w14"
-v = Volume(htid)
-p = v.pages[0]
-
-workset = [
-    "uc1.32106011187561",
-    "mdp.35112103187797",
-    "uc1.$b684263"
-]
