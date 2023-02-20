@@ -1,5 +1,7 @@
 """Object API to the Extracted Features API."""
 
+__version__ = '0.1.0'
+
 from collections import Counter
 from urllib.parse import urlparse
 import uuid

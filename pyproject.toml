@@ -1,20 +1,22 @@
 [tool.poetry]
-name = "torchlitelib"
+name = "HTRC-EF-Lib"
 version = "0.1.0"
 description = "A Python library for working with HTRC Extracted Features data"
 authors = ["cwulfman <cliff@agilehumanities.ca>"]
 license = "MIT"
+packages = [
+  {include = "htrc/torchlite/ef", from = "src"}
+]
+
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 requests = "^2.28.1"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.1.2"
 pyright = "^1.1.265"
 black = "^22.6.0"
-
-[tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
 
 [build-system]
