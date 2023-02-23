@@ -242,14 +242,9 @@ class WorkSet:
     @property
     def tokens(self):
         if not self._tokens:
+            self._tokens = Counter()
             for volume in self.volumes.values():
-                for token in volume.tokens.keys():
-                    try:
-                        tok = self._tokens[token]
-                    except KeyError:
-                        self._tokens[token] = {"pos": Counter()}
-                        tok = self._tokens[token]
-                    tok["pos"].update(volume.tokens[token]["pos"])
+                self._tokens.update(volume.tokens)
         return self._tokens
 
 
