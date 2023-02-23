@@ -1,6 +1,6 @@
 from collections import Counter
 import requests
-from page import Page
+from htrc.torchlite.ef.page import Page
 
 
 class Volume:

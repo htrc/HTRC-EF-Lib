@@ -1,5 +1,6 @@
 import pytest
-from htrc.torchlite.ef import Volume, Page
+from htrc.torchlite.ef.volume import Volume
+from htrc.torchlite.ef.page import Page
 
 
 @pytest.fixture

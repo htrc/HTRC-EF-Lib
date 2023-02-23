@@ -1,7 +1,6 @@
 from collections import Counter
 import requests
 import logging
-from volume import Volume
 
 
 class Page:
@@ -10,6 +9,10 @@ class Page:
         self.seq = seq
         self._properties = {}
         self._tokens = {}
+
+    @property
+    def url(self):
+        return f"{self._volume.url}/pages?seq={self.seq}"
 
     def get_property(self, property):
         if property not in self._properties:

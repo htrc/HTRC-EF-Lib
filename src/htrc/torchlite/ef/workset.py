@@ -1,7 +1,7 @@
 from collections import Counter
 import requests
 import logging
-from volume import Volume
+from htrc.torchlite.ef.volume import Volume
 
 
 class WorkSet:
