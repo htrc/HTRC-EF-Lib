@@ -1,6 +1,7 @@
 import pytest
 from htrc.torchlite.ef import Volume
-#torchlitelib.extracted_features import Volume
+
+# torchlitelib.extracted_features import Volume
 
 
 @pytest.fixture
@@ -34,3 +35,8 @@ def test_contributor(volume2):
 def test_fetch_feature(volume1):
     result = volume1.fetch_feature('pageCount')
     assert result == 70
+
+
+def test_tokens(volume1):
+    toks = volume1.tokens
+    assert toks['und'] == 172

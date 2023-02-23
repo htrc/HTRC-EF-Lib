@@ -166,14 +166,9 @@ class Volume:
     @property
     def tokens(self):
         if not self._tokens:
+            self._tokens = Counter()
             for page in self.pages:
-                for token in page.tokens.keys():
-                    try:
-                        tok = self._tokens[token]
-                    except KeyError:
-                        self._tokens[token] = {"pos": Counter()}
-                        tok = self._tokens[token]
-                    tok["pos"].update(page.tokens[token]["pos"])
+                self._tokens.update(page.tokens)
         return self._tokens
 
 
