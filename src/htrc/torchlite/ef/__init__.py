@@ -8,6 +8,7 @@ import uuid
 import requests
 import logging
 
+
 class WorkSet:
     def __init__(self, volume_list):
         self.volumes = [Volume(htid) for htid in volume_list]
@@ -25,6 +26,7 @@ class WorkSet:
                         tok = self._tokens[token]
                     tok["pos"].update(volume.tokens[token]['pos'])
         return self._tokens
+
 
 class Volume:
     base_url = "https://tools.htrc.illinois.edu/ef-api/volumes"
@@ -164,14 +166,9 @@ class Volume:
     @property
     def tokens(self):
         if not self._tokens:
+            self._tokens = Counter()
             for page in self.pages:
-                for token in page.tokens.keys():
-                    try:
-                        tok = self._tokens[token]
-                    except KeyError:
-                        self._tokens[token] = {"pos": Counter()}
-                        tok = self._tokens[token]
-                    tok["pos"].update(page.tokens[token]["pos"])
+                self._tokens.update(page.tokens)
         return self._tokens
 
 
@@ -245,14 +242,9 @@ class WorkSet:
     @property
     def tokens(self):
         if not self._tokens:
+            self._tokens = Counter()
             for volume in self.volumes.values():
-                for token in volume.tokens.keys():
-                    try:
-                        tok = self._tokens[token]
-                    except KeyError:
-                        self._tokens[token] = {"pos": Counter()}
-                        tok = self._tokens[token]
-                    tok["pos"].update(volume.tokens[token]["pos"])
+                self._tokens.update(volume.tokens)
         return self._tokens
 
 
@@ -300,12 +292,9 @@ class Page:
     @property
     def tokens(self):
         if not self._tokens and self.tokenCount > 0:
+            self._tokens = Counter()
             for k in self.tokenPosCount.keys():
-                token = k.lower()
-                pos = list(self.tokenPosCount[k])[0]
-                count = self.tokenPosCount[k][pos]
-                try:
-                    self._tokens[token]["pos"].update({pos: count})
-                except KeyError:
-                    self._tokens[token] = {"pos": Counter({pos: count})}
+                self._tokens[k.lower()] = 0
+            for k, v in self.tokenPosCount.items():
+                self._tokens[k.lower()] = sum(v.values())
         return self._tokens
