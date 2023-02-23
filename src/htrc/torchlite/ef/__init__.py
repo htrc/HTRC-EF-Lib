@@ -3,36 +3,16 @@
 __version__ = '0.1.0'
 
 from collections import Counter
-from urllib.parse import urlparse
-import uuid
 import requests
 import logging
-
-
-class WorkSet:
-    def __init__(self, volume_list):
-        self.volumes = [Volume(htid) for htid in volume_list]
-        self._tokens = {}
-
-    @property
-    def tokens(self):
-        if not self._tokens:
-            for volume in self.volumes:
-                for token in volume.tokens.keys():
-                    try:
-                        tok = self._tokens[token]
-                    except KeyError:
-                        self._tokens[token] = {"pos": Counter()}
-                        tok = self._tokens[token]
-                    tok["pos"].update(volume.tokens[token]['pos'])
-        return self._tokens
 
 
 class Volume:
     base_url = "https://tools.htrc.illinois.edu/ef-api/volumes"
 
     def __init__(self, htid):
-        self.id = htid
+        self.htid = htid
+        self._metadata = {}
         self._data = {}
         self._pages = []
         self._tokens = {}
@@ -48,11 +28,21 @@ class Volume:
         self._genre = None
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.id})"
+        return f"{self.__class__.__name__}({self.htid})"
 
     @property
     def url(self):
-        return "/".join((self.base_url, self.id))
+        return "/".join((self.base_url, self.htid))
+
+    @property
+    def metadata(self):
+        if not self._metadata:
+            r = requests.get(f"{self.url}/metadata")
+            try:
+                self._metadata = r.json()['data']['metadata']
+            except KeyError:
+                logging.warning(r.json()['message'])
+        return self._metadata
 
     @property
     def data(self):
@@ -64,11 +54,10 @@ class Volume:
         field properties.
         """
         if not self._data:
-            url = "/".join((self.base_url, self.id))
+            url = "/".join((self.base_url, self.htid))
             r = requests.get(url)
-            json = r.json()
             try:
-                self._data = json["data"]
+                self._data = r.json()["data"]
             except KeyError:
                 logging.warning(r.json()["message"])
         return self._data
@@ -77,15 +66,13 @@ class Volume:
         """Fetches metadata field via the EF API."""
         url = f"{self.url}/metadata?fields=metadata.{field}"
         r = requests.get(url)
-        json = r.json()
-        return json['data']['metadata'][field]
+        return r.json()['data']['metadata'][field]
 
     def fetch_feature(self, field):
         """Fetches metadata field via the EF API."""
         url = f"{self.url}?fields=features.{field}"
         r = requests.get(url)
-        json = r.json()
-        return json['data']['features'][field]
+        return r.json()['data']['features'][field]
 
     @property
     def title(self):
@@ -158,8 +145,7 @@ class Volume:
         if not self._pages:
             pages_url = f"{self.url}/pages?fields=pages.seq"
             r = requests.get(pages_url)
-            json = r.json()
-            seq_nums = [page['seq'] for page in json['data']['pages']]
+            seq_nums = [page['seq'] for page in r.json()['data']['pages']]
             self._pages = [Page(self, seq_num) for seq_num in seq_nums]
         return self._pages
 
@@ -173,79 +159,57 @@ class Volume:
 
 
 class WorkSet:
-    def __init__(self, **kwargs):
-        self.id = str(uuid.uuid1())
-        self.type = None
-        self.description = None
-        self.created = None
-        self.extent = None
-        self.title = None
-        self.visibility = None
-        self.intent = None
-        self.gathers = []
-        self._volumes = {}
-        self._tokens = {}
+    base_url = "https://tools.htrc.illinois.edu/ef-api/worksets"
 
-        if 'url' in kwargs:
-            self.load_workset(kwargs['url'])
+    def __init__(self, htid):
+        self.htid = htid
+        self.volumes = []
+        self._tokens = None
 
-    def load_workset(self, url):
         try:
-            r = requests.get(url)
+            r = requests.get(f"{self.base_url}/{htid}")
             r.raise_for_status()
         except requests.exceptions.HTTPError as err:
             raise SystemExit(err)
 
-        self._json = r.json()
-        self.id = urlparse(url).path.split('/')[-1]
-        # self.id = self._json['id']
-        self.description = self._json['description']
-        self.type = self._json['type']
-        self.created = self._json['created']
-        self.extent = self._json['extent']
-        self.title = self._json['title']
-        self.visibility = self._json['visibility']
-        self.intent = self._json['intent']
-        self.gathers = self._json['gathers']
-
-    @property
-    def metadata(self):
-        return {
-            "id": self.id,
-            "description": self.description,
-            "created": self.created,
-            "extent": self.extent,
-            "title": self.title,
-            "visibility": self.visibility,
-            "intent": self.intent,
-        }
-
-    @property
-    def volumes(self):
-        if not self._volumes:
-            self._volumes = {}
-            for gathered in self.gathers:
-                v_id = urlparse(gathered['id']).path.split('/')[-1]
-                self.add_volume(v_id)
-        return self._volumes
-
-    def add_volume(self, volume_id):
-        self._volumes[volume_id] = Volume(volume_id)
-
-    def get_volume(self, volume_id):
-        return self.volumes[volume_id]
-
-    def delete_volume(self, volume_id):
-        del self.volumes[volume_id]
-        return self.volumes
+        self._volume_ids = r.json()['data']['htids']
+        self.volumes = [Volume(vid) for vid in self._volume_ids]
 
     @property
     def tokens(self):
-        if not self._tokens:
+        if not (self._tokens):
+            url = f"{self.base_url}/{self.htid}/volumes?pos=false&fields=features.pages.body.tokensCount"
+            try:
+                r = requests.get(url)
+                r.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                raise SystemExit(err)
+
+            volume_data = r.json()['data']
             self._tokens = Counter()
-            for volume in self.volumes.values():
-                self._tokens.update(volume.tokens)
+            for volume in volume_data:
+                for page in volume['features']['pages']:
+                    cntr = Counter()
+                    tokens = page['body']['tokensCount']
+                    if tokens:
+                        for k in tokens.keys():
+                            cntr[k.lower()] = 0
+                        for k, v in tokens.items():
+                            cntr[k.lower()] += v
+                        self._tokens.update(cntr)
         return self._tokens
+
+    @property
+    def titles(self):
+        try:
+            r = requests.get(
+                f"{self.base_url}/{self.htid}/metadata?fields=htid,metadata.title"
+            )
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            raise SystemExit(err)
+
+        return r.json()['data']
 
 
 class Page:
@@ -259,11 +223,9 @@ class Page:
         if property not in self._properties:
             url = f"{self._volume.url}/pages?seq={self.seq}&fields=pages.{property}"
             r = requests.get(url)
-            json = r.json()
             try:
-                page_data = json["data"]["pages"]
-                duff = [p[property] for p in page_data][0]
-                self._properties[property] = duff
+                page_data = r.json()["data"]["pages"]
+                self._properties[property] = [p[property] for p in page_data][0]
 
             except KeyError:
                 logging.warning(r.json()["message"])
@@ -290,7 +252,7 @@ class Page:
         return self.get_property('body')['tokenPosCount']
 
     @property
-    def tokens(self):
+    def tokens_old(self):
         if not self._tokens and self.tokenCount > 0:
             self._tokens = Counter()
             for k in self.tokenPosCount.keys():
