@@ -1,6 +1,6 @@
 import pytest
 
-from htrc.torchlite.ef import WorkSet
+from htrc.torchlite.ef.workset import WorkSet
 
 
 @pytest.fixture

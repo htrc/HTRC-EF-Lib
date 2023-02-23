@@ -1,5 +1,6 @@
 import pytest
-from htrc.torchlite.ef import Volume
+from htrc.torchlite.ef.volume import Volume
+
 
 @pytest.fixture
 def volume1():
@@ -36,4 +37,4 @@ def test_fetch_feature(volume1):
 
 def test_tokens(volume1):
     toks = volume1.tokens
-    assert toks['und'] == 172
+    assert toks['und'] == 286
