@@ -56,3 +56,15 @@ class WorkSet:
             raise SystemExit(err)
 
         return r.json()['data']
+
+    @property
+    def metadata(self):
+        try:
+            r = requests.get(
+                f"{self.base_url}/{self.htid}/metadata?fields=htid,metadata.title,metadata.pubDate,metadata.publisher.name,metadata.pubPlace.name"
+            )
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            raise SystemExit(err)
+
+        return r.json()['data']
