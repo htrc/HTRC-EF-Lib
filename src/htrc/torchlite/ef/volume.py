@@ -1,6 +1,8 @@
-from collections import Counter
 import logging
+from collections import Counter
+
 import requests
+
 from htrc.torchlite.ef.page import Page
 
 

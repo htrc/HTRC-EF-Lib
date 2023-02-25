@@ -1,6 +1,7 @@
-from collections import Counter
-import requests
 import logging
+from collections import Counter
+
+import requests
 
 
 class Page:
