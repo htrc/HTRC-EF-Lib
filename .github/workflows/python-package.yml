@@ -15,13 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Poetry setup
+      uses: Gr1N/setup-poetry@v8
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4.5.0
       with:
         python-version: "3.11"
         cache: "poetry"
-    - name: Poetry setup
-      uses: Gr1N/setup-poetry@v8
     - name: Install dependencies
       run: |
         poetry install
